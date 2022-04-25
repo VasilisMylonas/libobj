@@ -1,6 +1,6 @@
 #include "obj.h"
 
-#include <stdio.h>
+// TODO
 
 int main()
 {

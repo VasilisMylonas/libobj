@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(libdynobj VERSION 0.1.0)
+project(libobj VERSION 0.1.0)
 
 add_library(obj obj.c)
 
