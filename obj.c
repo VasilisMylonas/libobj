@@ -19,18 +19,16 @@ static noreturn void obj_trap_method(const obj_t* self, const char* name)
 
 void (*obj_get_method(const obj_t* self, const char* name))(void)
 {
-    const struct __obj_vtable* vtable = *(const struct __obj_vtable**)self;
-
     for (size_t i = 0; i < OBJ_METHODS_MAX; i++)
     {
-        if (vtable->methods[i].name == NULL)
+        if ((*self)->_private.methods[i].name == NULL)
         {
             obj_trap_method(self, name);
         }
 
-        if (strcmp(vtable->methods[i].name, name) == 0)
+        if (strcmp((*self)->_private.methods[i].name, name) == 0)
         {
-            return vtable->methods[i].impl;
+            return (*self)->_private.methods[i].impl;
         }
     }
 
@@ -39,46 +37,42 @@ void (*obj_get_method(const obj_t* self, const char* name))(void)
 
 const char* obj_typeof(const obj_t* self)
 {
-    const struct __obj_vtable* vtable = *(const struct __obj_vtable**)self;
-    return vtable->name;
+    return (*self)->_private.name;
 }
 
 size_t obj_sizeof(const obj_t* self)
 {
-    const struct __obj_vtable* vtable = *(const struct __obj_vtable**)self;
-    return vtable->size;
+    return (*self)->_private.size;
 }
 
-uintptr_t obj_typeid(const void* self)
+uintptr_t obj_typeid(const obj_t* self)
 {
-    const struct __obj_vtable* vtable = *(const struct __obj_vtable**)self;
-    return (uintptr_t)vtable;
+    return (uintptr_t)*self;
 }
 
 void obj_destroy(obj_t* self)
 {
-    OBJ_CALL(void, "obj_destroy", self);
+    OBJ_CALL(void, obj_destroy, self);
 }
 
 char* obj_to_string(const obj_t* self)
 {
-    return OBJ_CALL(char*, "obj_to_string", self);
+    return OBJ_CALL(char*, obj_to_string, self);
 }
 
 void obj_print_vtable(const obj_t* self)
 {
-    const struct __obj_vtable* vtable = *(const struct __obj_vtable**)self;
-    fprintf(stderr, "VTable for type %s:\n", vtable->name);
+    fprintf(stderr, "VTable for type %s:\n", obj_typeof(self));
 
     for (size_t i = 0; i < OBJ_METHODS_MAX; i++)
     {
-        if (vtable->methods[i].name != NULL)
+        if ((*self)->_private.methods[i].name != NULL)
         {
             fprintf(stderr,
                     "  %s::%s() - %p\n",
-                    vtable->name,
-                    vtable->methods[i].name,
-                    vtable->methods[i].impl);
+                    obj_typeof(self),
+                    (*self)->_private.methods[i].name,
+                    (*self)->_private.methods[i].impl);
         }
     }
 }
