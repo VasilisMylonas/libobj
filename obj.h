@@ -41,7 +41,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define OBJ_METHODS_MAX 62
+/**
+ * The maximum number of methods allowed for an object.
+ */
+#define OBJ_METHODS_MAX 64
 
 /**
  * Marker for structs that want to be handled as libobj objects.
@@ -49,7 +52,7 @@
  * This should be the first thing inside a struct. It may insert additional members inside the
  * struct which should not, however, be modified.
  */
-#define OBJ_HEADER const struct __obj_vtable* __vptr;
+#define OBJ_HEADER const struct __libobj_vtable* __vptr;
 
 /**
  * Initializes an objects' vtable.
@@ -78,7 +81,7 @@
  * @see OBJ_METHOD
  */
 #define OBJ_VTABLE_INIT(T, ...)                                                                    \
-    static const struct __obj_vtable __##T##_vtable = {                                            \
+    static const struct __libobj_vtable __##T##_vtable = {                                         \
         ._private.size = sizeof(T),                                                                \
         ._private.name = #T,                                                                       \
         ._private.methods = {__VA_ARGS__},                                                         \
@@ -130,6 +133,8 @@
  * The user would then just have to call stream_write_byte as a normal function and internally it
  * would dispatch to the file_t implementation.
  *
+ * If the specified method is not found, libobj_on_missing_method() is called.
+ *
  * @param TReturn The return type of the method to call.
  * @param name The method to call.
  * @param ... The arguments to pass to the method.
@@ -139,7 +144,7 @@
  *       the name of the method.
  */
 #define OBJ_CALL(TReturn, method, ...)                                                             \
-    ((TReturn(*)())obj_get_method(__OBJ_FIRST(__VA_ARGS__), #method))(__VA_ARGS__, #method)
+    ((TReturn(*)())__libobj_get_method(__LIBOBJ_FIRST(__VA_ARGS__), #method))(__VA_ARGS__, #method)
 
 /**
  * Represents a libobj object.
@@ -150,7 +155,7 @@
  *
  * obj_t should be considered an incomplete type and any members are considered private.
  */
-typedef const struct __obj_vtable* obj_t;
+typedef const struct __libobj_vtable* obj_t;
 
 /**
  * Converts a T* to an obj_t*.
@@ -163,10 +168,15 @@ typedef const struct __obj_vtable* obj_t;
 #define OBJ(x) (&(x)->__vptr)
 
 /**
- * @defgroup functions Object manipulation functions.
+ * Called when a requested method is not found.
  *
- * @{
+ * The default behavior is to print a message and call abort(). To restore the default behavior set
+ * this back to NULL.
+ *
+ * @param object The object in question.
+ * @param name The name of the requested method.
  */
+extern void (*libobj_on_missing_method)(const obj_t* object, const char* name);
 
 /**
  * Returns a string describing an object's type.
@@ -186,6 +196,9 @@ size_t obj_sizeof(const obj_t* self);
 
 /**
  * Returns an identifier representing an object's type.
+ *
+ * @note Currently there is no way to guarantee that different type id's => different types (TODO).
+ *       It is however true that equal type id's => same type.
  *
  * @param self The object.
  * @return The type id.
@@ -221,24 +234,11 @@ char* obj_to_string(const obj_t* self);
  */
 void obj_print_vtable(const obj_t* self);
 
-/**
- * Retrieves the specified method from an object's vtable.
- *
- * A better alternative to this is using the OBJ_CALL macro.
- *
- * @param self The object.
- * @param name The method name.
- * @return The requested method.
- */
-void (*obj_get_method(const obj_t* self, const char* name))(void);
+#define __LIBOBJ_FIRST(a, ...) a
 
-/**
- * @}
- */
+void (*__libobj_get_method(const obj_t*, const char*))(void);
 
-#define __OBJ_FIRST(a, ...) a
-
-struct __obj_vtable
+struct __libobj_vtable
 {
     struct
     {
