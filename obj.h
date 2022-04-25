@@ -252,31 +252,4 @@ struct __libobj_vtable
     } _private;
 };
 
-#ifdef __OPTIMIZE__
-inline const char* obj_typeof(const obj_t* self)
-{
-    return (*self)->_private.name;
-}
-
-inline size_t obj_sizeof(const obj_t* self)
-{
-    return (*self)->_private.size;
-}
-
-inline uintptr_t obj_typeid(const obj_t* self)
-{
-    return (uintptr_t)*self;
-}
-
-inline void obj_destroy(obj_t* self)
-{
-    OBJ_CALL(void, obj_destroy, self);
-}
-
-inline char* obj_to_string(const obj_t* self)
-{
-    return OBJ_CALL(char*, obj_to_string, self);
-}
-#endif
-
 #endif // OBJ_H
