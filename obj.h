@@ -160,8 +160,8 @@ typedef const struct __libobj_vtable* obj_t;
 /**
  * Converts a T* to an obj_t*.
  *
- * This will result in a compile error if T is not a struct beginning with OBJ_HEADER or if T is an
- * incomplete type.
+ * This will result in a compile error if T is not a struct beginning with OBJ_HEADER or if T is
+ * an incomplete type.
  *
  * To circumvent this (NOT RECOMMENDED) cast T* to a obj_t* first.
  */
@@ -170,8 +170,8 @@ typedef const struct __libobj_vtable* obj_t;
 /**
  * Called when a requested method is not found.
  *
- * The default behavior is to print a message and call abort(). To restore the default behavior set
- * this back to NULL.
+ * The default behavior is to print a message and call abort(). To restore the default behavior
+ * set this back to NULL.
  *
  * @param object The object in question.
  * @param name The name of the requested method.
@@ -197,18 +197,20 @@ size_t obj_sizeof(const obj_t* self);
 /**
  * Returns an identifier representing an object's type.
  *
- * @note Currently there is no way to guarantee that different type id's => different types (TODO).
- *       It is however true that equal type id's => same type.
+ * @note Currently there is no way to guarantee that different type id's => different types
+ * (TODO). It is however true that equal type id's => same type.
  *
  * @param self The object.
  * @return The type id.
  */
 uintptr_t obj_typeid(const obj_t* self);
 
+uintptr_t obj_hash(const obj_t* self);
+int obj_cmp(const obj_t* self, const obj_t* other);
+void (*obj_find_method(const obj_t* self, const char* name))(void);
+
 /**
  * Calls the destructor for an object.
- *
- * This function requires that the object has a proper obj_destroy method to call.
  *
  * @param object The object.
  */
@@ -216,8 +218,6 @@ void obj_destroy(obj_t* object);
 
 /**
  * Returns a string representation of an object.
- *
- * This function requires that the object has a proper obj_to_string method to call.
  *
  * @param self The object.
  * @return The object's string representation. This is a malloc()'d C string and is owned by the

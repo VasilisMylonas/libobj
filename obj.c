@@ -26,6 +26,8 @@
 
 #include "obj.h"
 
+#include "fast-hash/fasthash.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,17 +36,10 @@ void (*libobj_on_missing_method)(const obj_t* object, const char* name);
 
 void (*__libobj_get_method(const obj_t* self, const char* name))(void)
 {
-    for (size_t i = 0; i < OBJ_METHODS_MAX; i++)
+    void (*method)(void) = obj_find_method(self, name);
+    if (method != NULL)
     {
-        if ((*self)->_private.methods[i].name == NULL)
-        {
-            break;
-        }
-
-        if (strcmp((*self)->_private.methods[i].name, name) == 0)
-        {
-            return (*self)->_private.methods[i].impl;
-        }
+        return method;
     }
 
     if (libobj_on_missing_method != NULL)
@@ -64,6 +59,24 @@ void (*__libobj_get_method(const obj_t* self, const char* name))(void)
     abort();
 }
 
+void (*obj_find_method(const obj_t* self, const char* name))(void)
+{
+    for (size_t i = 0; i < OBJ_METHODS_MAX; i++)
+    {
+        if ((*self)->_private.methods[i].name == NULL)
+        {
+            break;
+        }
+
+        if (strcmp((*self)->_private.methods[i].name, name) == 0)
+        {
+            return (*self)->_private.methods[i].impl;
+        }
+    }
+
+    return NULL;
+}
+
 const char* obj_typeof(const obj_t* self)
 {
     return (*self)->_private.name;
@@ -81,12 +94,26 @@ uintptr_t obj_typeid(const obj_t* self)
 
 void obj_destroy(obj_t* self)
 {
-    OBJ_CALL(void, obj_destroy, self);
+    void (*method)(void) = obj_find_method(self, "obj_destroy");
+    if (method != NULL)
+    {
+        ((void (*)(obj_t*))method)(self);
+    }
 }
 
 char* obj_to_string(const obj_t* self)
 {
-    return OBJ_CALL(char*, obj_to_string, self);
+    void (*method)(void) = obj_find_method(self, "obj_to_string");
+    if (method == NULL)
+    {
+        const char* type = obj_typeof(self);
+
+        // return strdup(type)
+        const size_t size = strlen(type) + 1;
+        return memcpy(malloc(size), type, size);
+    }
+
+    return ((char* (*)(const obj_t*))method)(self);
 }
 
 void obj_print_vtable(const obj_t* self)
@@ -104,4 +131,33 @@ void obj_print_vtable(const obj_t* self)
                     (*self)->_private.methods[i].impl);
         }
     }
+}
+
+uintptr_t obj_hash(const obj_t* self)
+{
+    void (*method)(void) = obj_find_method(self, "obj_hash");
+    if (method == NULL)
+    {
+        return fasthash64(self, obj_sizeof(self), 0);
+    }
+    return ((uintptr_t(*)(const obj_t*))method)(self);
+}
+
+int obj_cmp(const obj_t* self, const obj_t* other)
+{
+    const size_t self_size = obj_sizeof(self);
+    const size_t other_size = obj_sizeof(other);
+
+    if (self_size != other_size)
+    {
+        return self_size - other_size;
+    }
+
+    void (*method)(void) = obj_find_method(self, "obj_cmp");
+    if (method == NULL)
+    {
+        return memcmp(self, other, self_size);
+    }
+
+    return ((int (*)(const obj_t*, const obj_t*, size_t))method)(self, other, self_size);
 }

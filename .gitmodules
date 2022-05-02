@@ -1,0 +1,3 @@
+[submodule "fast-hash"]
+	path = fast-hash
+	url = https://github.com/ztanml/fast-hash
