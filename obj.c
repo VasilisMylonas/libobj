@@ -95,10 +95,12 @@ uintptr_t obj_typeid(const obj_t* self)
 void obj_destroy(obj_t* self)
 {
     void (*method)(void) = obj_find_method(self, "obj_destroy");
-    if (method != NULL)
+    if (method == NULL)
     {
-        ((void (*)(obj_t*))method)(self);
+        return;
     }
+
+    ((void (*)(obj_t*))method)(self);
 }
 
 char* obj_to_string(const obj_t* self)

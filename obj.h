@@ -205,9 +205,18 @@ size_t obj_sizeof(const obj_t* self);
  */
 uintptr_t obj_typeid(const obj_t* self);
 
+/**
+ * Prints information about an object's vtable to stderr.
+ *
+ * This can be useful for debugging.
+ *
+ * @param self The object.
+ */
+void obj_print_vtable(const obj_t* self);
+
+void (*obj_find_method(const obj_t* self, const char* name))(void);
 uintptr_t obj_hash(const obj_t* self);
 int obj_cmp(const obj_t* self, const obj_t* other);
-void (*obj_find_method(const obj_t* self, const char* name))(void);
 
 /**
  * Calls the destructor for an object.
@@ -224,15 +233,6 @@ void obj_destroy(obj_t* object);
  *         caller of the function.
  */
 char* obj_to_string(const obj_t* self);
-
-/**
- * Prints information about an object's vtable to stderr.
- *
- * This can be useful for debugging.
- *
- * @param self The object.
- */
-void obj_print_vtable(const obj_t* self);
 
 #define __LIBOBJ_FIRST(a, ...) a
 
